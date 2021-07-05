@@ -44,23 +44,43 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * Search product by category
+ */
+router.get('/category-search', async (req, res) => {
+    const category = req.query.category;
+    console.log(category);
+    if(!category) return res.status(400).send('Insufficient data');
+    try{
+        const result = await db.query('SELECT * FROM products WHERE category = $1', [category]);
+
+        if(result.rows.length < 1) return res.status(200).send('No results found');
+        res.json(result.rows);
+    }catch(err){
+        console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+/**
  * Get product based on id.
  * @returns json object
  */
-router.get('/:id', async (req, res) => {
+router.get('/id-search/:id', async (req, res) => {
     console.log('/:id running');
-    const productId = req.params.productId;
+    const productId = parseInt(req.params.id);
+    console.log(typeof productId);
     if(!productId) return res.status(400).send('Insufficient data');
-    if(typeof(productId) !== Number) return res.status(400).send('Incorrect data format');
+    if(typeof(productId) !== 'number') return res.status(400).send('Incorrect data format');
 
     try{
         const result = await db.query('SELECT * FROM products WHERE product_id = $1', [productId]);
-        res.json(result);
+        res.json(result.rows);
     }catch(err){
         console.log(err);
         return res.status(500).send('Error accessing database');
     }
 });
+
 
 /**
  * Create new product
@@ -71,13 +91,15 @@ router.post('/create', async (req, res) => {
     const product = {
         prodName: prodName,
         description: description,
-        price: price
+        price: price,
+        quantity: quantity,
+        category: category
     } = req.body;
     console.log(description);
     console.log(price);
-    if(!prodName || !description || !price ) return res.status(400).send('Insufficient data provided');
+    if(!prodName || !description || !price || !quantity ) return res.status(400).send('Insufficient data provided');
     try{
-        await db.query('INSERT INTO products(name, description, price) VALUES ($1, $2, $3)', [prodName, description, price]);
+        await db.query('INSERT INTO products(name, description, price, quantity, category) VALUES ($1, $2, $3, $4, $5)', [prodName, description, price, quantity, category]);
         res.send(`New product: ${prodName} has been added.`)
     }catch(err){
         console.log(err);
@@ -112,8 +134,6 @@ router.put('/', async(req, res) => {
     const productId = req.body.productId;
     const columnToUpdate = req.body.columnToUpdate;
     const valueToInsert = req.body.valueToInsert;
-
-
 
     if(!productId || !columnToUpdate || !valueToInsert) return res.status(400).send('Insufficient data provided');
 
