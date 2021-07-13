@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('./dbConnection.js')
 const bodyParser = require('body-parser');
+const { route } = require('./user.js');
 const app = express();
 
 const router = express.Router();
@@ -24,13 +25,17 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+/**
+ * Delete item from the cart.
+ * @returns response.
+ */
 router.delete('/remove-item', async ( req, res) => {
     console.log('/remove-item');
     const data = {
         userId: userId,
         productId: productId
     } = req.body;
-    if(!userId || !productId)
+    if(!userId || !productId) return res.status(400).send('Insufficient data.')
     try{
         await db.query('DELETE FROM carts WHERE user_id = $1 AND product_id = $2', [userId, productId]);
         res.send(`Item has been removed from cart`);
@@ -40,6 +45,10 @@ router.delete('/remove-item', async ( req, res) => {
     }
 });
 
+/**
+ * Add an item to the user's cart.
+ * @returns response.
+ */
 router.post('/add-item', async (req, res, next) => {
     console.log('/add-item');
     console.log('body' + req.body.userId);
@@ -61,6 +70,7 @@ router.post('/add-item', async (req, res, next) => {
             updateQuantity(userId, productId, quantity, currentQuantity.rows[0].quantity);
             res.send('Quantity updated');
         }else{
+            //2. Insert Order into cart.
             await db.query('INSERT INTO carts(user_id, date_time, product_id, quantity, checked_out) values($1, NOW(), $2, $3, false)', [userId, productId, quantity]);
             res.send('Product successfully added to cart');
         }
@@ -70,8 +80,79 @@ router.post('/add-item', async (req, res, next) => {
         res.status(500).send('Error accessing database');
     }
 });
+/**
+ * Checkout all current items in user cart.
+ * First ensure user has an active cart.
+ * Then calculate order total and item totals.
+ * Then check user payment details.
+ * Finally create order in orders table and amend checked_out status in carts to true.
+ * @returns response.
+ */
+router.post('/:id/checkout', async (req, res) => {
+    console.log(':id/checkout activated');
+    const userId = req.params.id;
+    const userPayment = req.body.paymentDetails;
+    try{
+        const currentCart = await db.query('SELECT carts.*, products.price, products.product_id, products.name FROM carts join products on carts.product_id = products.product_id WHERE user_id = $1 AND checked_out = false', [userId]);
+        if(currentCart.rows.length < 1) return res.send('User has no active carts');
+        console.log("cart exists ." + currentCart.rows);
+        let totalCost = 0;
+       currentCart.rows.map( (row) => {
+            console.log(totalCost + '+' + row.price);
+            totalCost += (row.price * row.quantity);
+            
+        });
+        
+        console.log('total cost = ' + totalCost);
+        const cartItems = currentCart.rows.map((row) => {
+            console.log(row);
+            let cost = row.price * row.quantity;
+            console.log('itemisedCost = ' + cost);
+            console.log('row name = ' + row.name);
+            const itemTotal = {
+                productId: row.product_id,
+                name: row.name,
+                total: cost,
+                quantity: row.quantity
+            };
+            return itemTotal;
+        });
 
-//function to increment quantity as product already listed in table
+        console.log('cartItems = ' + cartItems);
+         //confirm payment
+         let successfulPayment = false;
+         const paymentDetails = await db.query('SELECT payment_details FROM users where user_id = $1', [userId]);
+         console.log('payment details = ' + paymentDetails.rows[0].payment_details);
+         if(userPayment === paymentDetails.rows[0].payment_details){
+             console.log('succesful payment = ' + successfulPayment);
+             successfulPayment = true;
+         }
+         
+         cartItems.map( async (item) => {
+             console.log(item);
+             try{
+                 console.log(`INSERT INTO orders(${userId}, ${item.productId}, NOW(), ${item.total}, ${successfulPayment}, ${item.quantity})`);
+                 db.query('INSERT INTO orders(user_id, product_id, date_ordered, total_cost, payment_received, quantity) VALUES($1, $2, NOW(), $3, $4, $5)', [userId, item.productId, item.total, successfulPayment, item.quantity]);
+                 db.query('UPDATE carts SET checked_out = true WHERE user_id = $1', [userId]);
+                 res.send('Order successfully created.');
+                }catch(err){
+                 console.log(err);
+                 res.status(500).send('error creating order');
+             }
+        });
+    }catch(err){
+        console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+/**
+ * 
+ * @param {*} userId 
+ * @param {*} productId 
+ * @param {*} quantity 
+ * @param {*} currentQuantity 
+ * @returns udated cart quantity if user and product already exists and not checked out of db.
+ */
 const updateQuantity = (userId, productId, quantity, currentQuantity) => {
     console.log(userId);
     console.log(productId);
