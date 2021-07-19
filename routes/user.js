@@ -1,10 +1,12 @@
-const express = require('express');
-const db = require('./dbConnection.js')
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
-const saltRounds = 10;
+const userModel = require('../models/userModel');
+const userModelInstance = new userModel();
+const express = require('express');
+const { isRejected } = require('@reduxjs/toolkit');
 const app = express();
 const router = express.Router();
+
+
 
 router.use(bodyParser.urlencoded({ extended: false }));
 
@@ -17,7 +19,8 @@ router.use(bodyParser.json());
 router.get('/users', async (req, res) => {
     console.log('/user running');
     try{
-        const result = await db.query('SELECT * FROM users');
+        const result = await userModelInstance.findAll();
+        console.log('result = ' + result.rows)
         res.json(result.rows);
 
     }catch(err){
@@ -34,16 +37,16 @@ router.get('/:id', async (req, res) => {
     const userId = req.params.id;
     if(!req.params.id) return res.status(400).send('Insuffience data');
     try{
-        const result = await db.query(`SELECT * FROM users WHERE user_id = $1`, [userId]);
-        if(result.rows.length < 1) return res.status(200).send('No mathcing users found');
-        res.json(result.rows);
+        const result = await userModelInstance.findUserById(userId);
+        if(!result) return res.status(200).send('No user found');
+        res.json(result);
     }catch(err){
         return res.status(500).send('Error retrieving results from database');
     };
 });
 
 /**
- * Create new User
+ * Register new User
  */
 router.post('/register', async (req, res, next) => {
     
@@ -57,47 +60,37 @@ router.post('/register', async (req, res, next) => {
         postCode: postCode,
         } = req.body;
         if(!email || !password || !street || !city || !postCode || !firstName || !lastName) return res.status(400).send('Insufficient data');
-        const salt = await bcrypt.genSalt(10);
-        let encryptedPassword = await bcrypt.hash(password, salt);
-        console.log(encryptedPassword);
         try{
-        const user = await db.query('SELECT * from users WHERE email = $1', [email]);
-        if(user.rows > 0) return res.status(200).send('User already exists');
-        const result = await db.query('INSERT INTO USERS(email, first_name, last_name, street, city, password, post_code) VALUES($1, $2, $3, $4, $5, $6, $7);', [email, firstName, lastName, street, city, encryptedPassword, postCode]);
+            const user = await userModelInstance.findUserByEmail(email);
+        if(user) return res.status(200).send('User already exists');
+        await userModelInstance.create(userDetails);
         res.send(`User ${email} added successfully`);
-    
     }catch(err){
         res.status(500).send('Error updating DB. Internal Server Error.');
         console.log(err);
     }   
 });
 
-// app.post('/login',
-//   passport.authenticate('local'),
-//   (req, res) => {
-//     // If this function gets called, authentication was successful.
-//     // `req.user` contains the authenticated user.
-//     res.redirect('/users/' + req.user.username);
-//   });
 
 /**
  * Update existing user
  */
 router.put('/', async (req, res) => {
-    const userId = req.body.userId;
-    const columnName = req.body.columnToUpdate;
-    const newValue = req.body.newValue;
+    const data = {
+        userId: userId,
+        columnToUpdate: columnToUpdate,
+        newValue: newValue
+    } = req.body;
     console.log(userId);
-    console.log(columnName);
+    console.log(columnToUpdate);
     console.log(newValue);
-    
     if(!userId) return res.status(400).send('Insufficient Data.');
 
     try{
-        const user = await db.query('SELECT * FROM users WHERE user_id = $1', [userId]);
-        if(user.rows.length < 1) return res.status(400).send('User not found');
+        const user = await userModelInstance.findUserById(userId);
+        if(!user) return res.status(400).send('User not found');
         console.log('user found');
-        await db.query(`UPDATE users SET ${columnName} = $1 WHERE user_id = $2`, [newValue, userId]);
+        await userModelInstance.update(data);
         res.status(200).send(`User ${userId} successfully updated`);
     }catch(err){
         res.status(500).send('Error accessing DB');
@@ -114,12 +107,12 @@ router.delete('/delete', async (req, res) => {
     if(!userId) return res.status(400).send('Insufficent data provided.');
 
     try{
-        const user = await db.query('SELECT * FROM users WHERE user_id = $1', [userId]);
-        if(user.rows.length < 1) return res.status(404).send('User not found.');
-        
-        db.query('DELETE FROM users WHERE user_id = $1', [userId]);
-        res.send(`${user.rows[0].email} deleted`);
-        //res.json(userJson);
+        const user = await userModelInstance.findUserById(userId);
+        if(!user) return res.status(404).send('User not found.');
+        console.log('user to be deleted exists');
+        userModelInstance.delete(userId);
+        console.log(user);
+        res.send(`${user[0].email} deleted`);
     }catch(err){
         res.status(500).send(err);
     }

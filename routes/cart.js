@@ -1,9 +1,9 @@
 const express = require('express');
-const db = require('./database/dbConnection.js')
+const db = require('../database/dbConnection.js')
 const bodyParser = require('body-parser');
 const { route } = require('./user.js');
 const app = express();
-
+const userServices = ('./userServices.js');
 const router = express.Router();
 router.use(bodyParser.urlencoded({ extended: false }));
 /**
@@ -16,8 +16,8 @@ router.get('/:id', async (req, res) => {
     if(!userId) return res.status(400).send('Insufficient data');
 
     try{
-        const cart = await db.query('SELECT * FROM carts WHERE user_id = $1 AND checked_out = false', [userId]);
-        if(cart.rows.length < 1) return res.status(200).send('User has no active carts.');
+        //const cart = await db.query('SELECT * FROM carts WHERE user_id = $1 AND checked_out = false', [userId]);
+        //if(cart.rows.length < 1) return res.status(200).send('User has no active carts.');
         res.json(cart.rows);
     }catch(err){
         console.log(err);

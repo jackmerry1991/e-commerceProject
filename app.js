@@ -1,7 +1,7 @@
 require('dotenv').config('./.env');
-const user = require('./user.js');
-const product = require('./products.js');
-const cart = require('./cart.js');
+const user = require('./routes/user.js');
+const product = require('./routes/products.js');
+const cart = require('./routes/cart.js');
 const express = require('express');
 const app = express();
 const port = 3000; 
