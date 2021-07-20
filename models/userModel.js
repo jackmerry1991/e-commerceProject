@@ -85,4 +85,14 @@ module.exports = class UserModel {
             console.log(err);
         }
     }
+
+    async checkUserPayment(data){
+        try{
+            const result = await db.query('SELECT payment_details FROM users where user_id = $1', [userId]);
+            if(result.rows < 1) return null;
+            return result.rows;
+        }catch(err){
+            console.log(err);
+        }
+    }
 }

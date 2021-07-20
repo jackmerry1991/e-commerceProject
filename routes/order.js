@@ -1,6 +1,7 @@
 const express = require('express');
-const db = require('./dbConnection.js')
 const bodyParser = require('body-parser');
+const OrderModel = require('../models/orderModel');
+const orderModelInstance = new OrderModel();
 const app = express();
 
 const router = express.Router();
@@ -14,15 +15,16 @@ router.get('/', async(req, res) => {
     const userId = req.body.userId;
     if(!userId) return res.status(400).send('Insufficient data');
     try{
-        const orders = await db.query('SELECT * FROM orders WHERE user_id = $1', [userId]);
-        res.json(orders.rows);
+        const orders = await orderModelInstance.getAllUserOrders(userId);
+        if(!orders) return res.status(200).send('User has no order history');
+        res.json(orders);
     }catch(err){
         res.status(500).send('Internal Server Error');
     }
 });
 
 /**
- * Get specific details of an order.
+ * Get specific order.
  * @returns response.
  */
 router.get('/:id', async (req, res) => {
@@ -31,15 +33,13 @@ router.get('/:id', async (req, res) => {
     if(!userId || !cartId) return res.status(400).send('Insufficient Data');
 
     try{
-        const order = db.query('SELECT * FROM orders WHERE user_id = $1 AND id = $2', [userId, orderId]);
+        const order = await orderModelInstance.getOrderDetails(userId, orderId);
+        if(!order) return res.status(200).send('No orders found');
         res.json(order.rows);
     }catch(err){
         console.log(err);
         res.status(500).send('Internal Server Error');
     }
 });
-
-
-
 
 module.exports = router;
