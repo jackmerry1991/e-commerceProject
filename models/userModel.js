@@ -88,9 +88,9 @@ module.exports = class UserModel {
 
     async checkUserPayment(data){
         try{
-            const result = await db.query('SELECT payment_details FROM users where user_id = $1', [userId]);
-            if(result.rows < 1) return null;
-            return result.rows;
+            const result = await db.query('SELECT * FROM users where user_id = $1', [data]);
+           if(result.rows < 1) return null;
+            return result.rows[0];
         }catch(err){
             console.log(err);
         }

@@ -20,7 +20,7 @@ router.get('/:id', async (req, res) => {
     if(!userId) return res.status(400).send('Insufficient data');
 
     try{
-        const cart = await cartModelInstance.findActiveCart(userId);
+        const cart = await cartModelInstance.findActtiveCart(userId);
         if(!cart) return res.status(200).send('User has no active carts.');
         res.json(cart);
     }catch(err){
@@ -41,6 +41,8 @@ router.delete('/remove-item', async ( req, res) => {
     } = req.body;
     if(!userId || !productId) return res.status(400).send('Insufficient data.')
     try{
+        const itemInCart = await cartModelInstance.findProductQuantity(data);
+        if(!itemInCart) return res.send('User has not stored this item in their cart');
         const deleted = await cartModelInstance.deleteItem(data);
         if(!deleted) return res.status(500).send('Error deleting item');
         res.send(`Item has been removed from cart`);
@@ -70,7 +72,8 @@ router.post('/add-item', async (req, res, next) => {
         const currentQuantity = await cartModelInstance.findProductQuantity(data);
         if(currentQuantity){
             console.log('Item exists, call function to update quantity instead')
-            const updated = cartModelInstance.updateQuantity(data, currentQuantity.quantity);
+            console.log(currentQuantity[0].quantity);
+            const updated = cartModelInstance.updateQuantity(data, currentQuantity[0].quantity);
             if(!updated) return res.status(500).send('Internal Server Error');
             res.send('Quantity updated');
         }else{
@@ -106,6 +109,7 @@ router.post('/:id/checkout', async (req, res) => {
             totalCost += (row.price * row.quantity);
             
         });
+        
         console.log('total cost = ' + totalCost);
         const cartItems = currentCart.map((row) => {
             console.log(row);
@@ -145,7 +149,6 @@ router.post('/:id/checkout', async (req, res) => {
         });
     }catch(err){
         console.log(err);
-        res.status(500).send('Internal Server Error');
     }
 });
 

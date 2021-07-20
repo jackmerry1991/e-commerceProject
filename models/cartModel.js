@@ -81,7 +81,7 @@ async updateQuantity (data, currentQuantity){
     async getCartAndPrices(data){
         try{
             const query = 'SELECT carts.*, products.price, products.product_id, products.name FROM carts join products on carts.product_id = products.product_id WHERE user_id = $1 AND checked_out = false';
-            const result = await db.query(query, [userId]);
+            const result = await db.query(query, [data]);
             if(result.rows.length < 1) return null;
             return result.rows;
 
@@ -93,7 +93,7 @@ async updateQuantity (data, currentQuantity){
     async setCheckoutStatus(data){
         try{
             const query = 'UPDATE carts SET checked_out = true WHERE user_id = $1';
-            await db.query(query, [userId]);
+            await db.query(query, [data]);
             return true;
         }catch(err){
             console.log(err);

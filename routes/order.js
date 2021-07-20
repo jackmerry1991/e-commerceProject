@@ -30,12 +30,13 @@ router.get('/', async(req, res) => {
 router.get('/:id', async (req, res) => {
     const userId = req.body.userId;
     const orderId = req.params.id;
-    if(!userId || !cartId) return res.status(400).send('Insufficient Data');
+    if(!userId || !orderId) return res.status(400).send('Insufficient Data');
 
     try{
         const order = await orderModelInstance.getOrderDetails(userId, orderId);
-        if(!order) return res.status(200).send('No orders found');
-        res.json(order.rows);
+        if(!order) return res.status(200).send('No matching orders found');
+        console.log(order);
+        res.json(order);
     }catch(err){
         console.log(err);
         res.status(500).send('Internal Server Error');
