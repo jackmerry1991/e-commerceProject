@@ -5,6 +5,7 @@ const express = require('express');
 const { isRejected } = require('@reduxjs/toolkit');
 const app = express();
 const router = express.Router();
+const passport = require('passport');
 
 
 
@@ -49,7 +50,7 @@ router.get('/:id', async (req, res) => {
  * Register new User
  */
 router.post('/register', async (req, res, next) => {
-    
+    console.log('/register');
     const userDetails = {
         email: email,
         firstName: firstName,
@@ -97,6 +98,15 @@ router.put('/', async (req, res) => {
         console.log(err);
     }
 });
+
+//login route
+router.post('/login',(req,res,next)=>{
+    console.log('/login');
+    passport.authenticate('local',{
+        successRedirect : '/dashboard',
+        failureRedirect: '/users/login',
+    })(req,res,next)
+    })
 
 /**
  * Delete existing user

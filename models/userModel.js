@@ -42,7 +42,8 @@ module.exports = class UserModel {
             const query = 'SELECT * FROM users WHERE email = $1';
             const result = await db.query(query, [data]);
             if(!(await result).rows.length > 0) return null;
-            return result.rows;
+            console.log(result.rows);
+            return result.rows[0];
         }catch(err){
             console.log(err);
         }

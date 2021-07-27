@@ -1,0 +1,88 @@
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcrypt');
+const User = require("../models/userModel");
+const userModelInstance = new User();
+
+
+module.exports = function initialize(passport, getUserByEmail, getUserById) {
+    const authenticateUser = async (email, password, done) => {
+      const user = await userModelInstance.findUserByEmail(email)
+      if (user == null) {
+        return done(null, false, { message: 'No user with that email' })
+      }
+  
+      try {
+          console.log('pwd = ' + password + ' userpwd = ' + user.password);
+        if (await bcrypt.compare(password, user.password)) {
+            console.log('match');
+          return done(null, user)
+        } else {
+            console.log('no match');
+          return done(null, false, { message: 'Password incorrect' })
+        }
+      } catch (e) {
+        return done(e)
+      }
+    }
+  
+    passport.use(new LocalStrategy({ usernameField: 'email' }, authenticateUser))
+    passport.serializeUser((user, done) => done(null, user.user_id))
+    passport.deserializeUser((id, done) => {
+      return done(null, userModelInstance.findUserById(id))
+    })
+  }
+  
+
+
+
+
+
+
+// module.exports = function(passport) {
+//     passport.use(
+//         new LocalStrategy({usernameField : 'email'},(email,password,done)=> {
+//                 //match user
+//                 userModelInstance.findUserByEmail(email)
+//                 .then((user)=>{
+//                  if(!user) {
+//                      console.log('user not registered');
+//                      return done(null,false,{message : 'that email is not registered'});
+//                  }
+//                  //match pass
+//                  console.log(password + ' ' + user.password);
+//                  bcrypt.compare(password,user.password,(err,isMatch)=>{
+//                      if(err) throw err;
+
+//                      if(isMatch) {
+//                          console.log('pwd match');
+//                          return done(null,user);
+//                      } else {
+//                          return done(null,false,{message : 'pass incorrect'});
+//                      }
+//                  })
+//                 })
+//                 .catch((err)=> {console.log(err)})
+//         })
+        
+//     )
+//     // passport.serializeUser(function(user, done) {
+//     //     console.log('serialize');
+//     //     done(null, user.user_id);
+//     //   });
+      
+//     // passport.deserializeUser(async (id, done) => {
+//     //     console.log('deserialize');
+//     //     const user = await userModelInstance.findUserById(id);
+        
+//     //     const finish = (err, user) => {
+//     //     console.log('done');
+//     //     done(err, user);
+//     //     };
+//     //     finish(user);
+//     //   }); 
+
+//     passport.serializeUser((user, done) => done(null, userModelInstance.user_id))
+//     passport.deserializeUser((id, done) => {
+//       return done(null, findUserById(id))
+//     })
+// }; 
