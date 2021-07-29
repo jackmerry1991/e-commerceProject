@@ -8,8 +8,25 @@ const router = express.Router();
 router.use(bodyParser.urlencoded({ extended: false }));
 
 /**
- * Get all orders for a sepecific user
- * @returns response.
+ * @swagger
+ * /order/:
+ *   get:
+ *     tags:
+ *       - Users
+ *     description: Returns an array of orders for the user
+ *     parameters:
+ *      -name: userId
+ *      -description: the id of the user
+ *      -in: body
+ *      -required: true
+ *      -type: integer
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: All Orders for the user
+ *         schema:
+ *           $ref: '#/definitions/Orders'
  */
 router.get('/', async(req, res) => {
     const userId = req.body.userId;
@@ -24,8 +41,30 @@ router.get('/', async(req, res) => {
 });
 
 /**
- * Get specific order.
- * @returns response.
+ * @swagger
+ * /order/:id:
+ *   get:
+ *     tags:
+ *       - Orders
+ *     description: Returns a specific order
+ *     parameters:
+ *       - name: userId
+ *         description: user's id
+ *         in: body
+ *         required: true
+ *         type: integer
+ *       - name: orderId
+ *         description: id of the order
+ *         in: path
+ *         required: true
+ *         type: integer
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Specific Order
+ *         schema:
+ *           $ref: '#/definitions/Order'
  */
 router.get('/:id', async (req, res) => {
     const userId = req.body.userId;

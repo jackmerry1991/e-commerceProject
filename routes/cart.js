@@ -4,15 +4,35 @@ const { route } = require('./user.js');
 const cartModel = require('../models/cartModel');
 const userModel = require('../models/userModel');
 const orderModel = require('../models/orderModel');
+const ProductModel = require('../models/productModel');
 const cartModelInstance = new cartModel();
 const userModelInstance = new userModel();
 const orderModelInstance = new orderModel();
+const productModelInstance = new ProductModel();
 const app = express();
 const router = express.Router();
 router.use(bodyParser.urlencoded({ extended: false }));
+
 /**
- * Get user's active cart by user ID.
- * @returns json object.
+ * @swagger
+ * /cart:id:
+ *   get:
+ *     tags:
+ *       - Carts
+ *     description: Returns user's active cart
+ *     parameters:
+ *       -name: id
+ *       -description: User's id
+ *       -in: path
+ *       -required: true
+ *       -type: integer
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: All User's active carts
+ *         schema:
+ *           $ref: '#/definitions/Cart'
  */
 router.get('/:id', async (req, res) => {
     console.log('cart/:id running');
@@ -30,8 +50,27 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * Delete item from the cart.
- * @returns response.
+ * @swagger
+ * /api/carts/remove-item:
+ *   delete:
+ *     tags:
+ *       - Carts
+ *     description: Deletes a single item from cart
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: userId
+ *         description: User's id
+ *         in: body
+ *         required: true
+ *         type: integer
+ *       - name: productId
+ *         description: id of product to be deleted
+ *         required: true
+ *         type: integer
+ *     responses:
+ *       200:
+ *         description: successfully deleted
  */
 router.delete('/remove-item', async ( req, res) => {
     console.log('/remove-item');
@@ -53,8 +92,32 @@ router.delete('/remove-item', async ( req, res) => {
 });
 
 /**
- * Add an item to the user's cart.
- * @returns response.
+ * @swagger
+ * /cart/add-item:
+ *   post:
+ *     tags:
+ *       - Users
+ *     description: Creates a new user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: userId
+ *         description: id of user
+ *         in: body
+ *         required: true
+ *       - name: productId
+ *         description: id of product
+ *         in: body
+ *         required: true
+ *       - name: quantity
+ *         description: quantity of product to be added
+ *         in: body
+ *         required: true
+ *         schema:
+ *           $ref: '#/definitions/Carts'
+ *     responses:
+ *       200:
+ *         description: Successfully added
  */
 router.post('/add-item', async (req, res, next) => {
     console.log('/add-item');
@@ -80,6 +143,7 @@ router.post('/add-item', async (req, res, next) => {
             //2. Insert Order into cart.
             const updated = await cartModelInstance.addItem(data);
             if(!updated) return res.status(500).send('Internal Server Error');
+            productModelInstance.updateQuantity(data);
             res.send('Product successfully added to cart');
         }
     }catch(err){
@@ -88,12 +152,28 @@ router.post('/add-item', async (req, res, next) => {
     }
 });
 /**
- * Checkout all current items in user cart.
- * First ensure user has an active cart.
- * Then calculate order total and item totals.
- * Then check user payment details.
- * Finally create order in orders table and amend checked_out status in carts to true.
- * @returns response.
+ * @swagger
+ * /user/register:
+ *   post:
+ *     tags:
+ *       - Users
+ *     description: Creates a new user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: userId
+ *         description: user's id
+ *         in: body
+ *         required: true
+ *       - name: payment
+ *         description: user's payment details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           $ref: '#/definitions/Cart'
+ *     responses:
+ *       200:
+ *         description: Successfully ordered.
  */
 router.post('/:id/checkout', async (req, res) => {
     console.log(':id/checkout activated');

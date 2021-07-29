@@ -8,8 +8,19 @@ const bodyParser = require('body-parser');
 router.use(bodyParser.urlencoded({ extended: false }));
 
 /**
- * Get all products
- * @returns json object
+ * @swagger
+ * /products/:
+ *   get:
+ *     tags:
+ *       - Products
+ *     description: Returns an array of products
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: All Users
+ *         schema:
+ *           $ref: '#/definitions/User'
  */
 router.get('/', async (req, res) => {
     try{
@@ -22,8 +33,25 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Search for specific product or products using a search term
- * @returns json object.
+ * @swagger
+ * /Products/search:
+ *   get:
+ *     tags:
+ *       - Products
+ *     description: Returns an array of products matching the search terms
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: searchTerm
+ *         description: The word or phrase being searched for
+ *         in: body
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: An array of products
+ *         schema:
+ *           $ref: '#/definitions/Products'
  */
  router.get('/search', async(req, res) => {
     console.log('calling /search');
@@ -44,7 +72,25 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * Search product by category
+ * @swagger
+ * /Products/search:
+ *   get:
+ *     tags:
+ *       - Products
+ *     description: Returns an array of products within the search category
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: category
+ *         description: The category of the search
+ *         in: body
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: An array of products
+ *         schema:
+ *           $ref: '#/definitions/Products'
  */
 router.get('/category-search', async (req, res) => {
     const category = req.query.category;
@@ -61,8 +107,25 @@ router.get('/category-search', async (req, res) => {
 });
 
 /**
- * Get product based on id.
- * @returns json object
+ * @swagger
+ * /Products/id-search/:id:
+ *   get:
+ *     tags:
+ *       - Users
+ *     description: Returns a single product
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: id
+ *         description: product id
+ *         in: path
+ *         required: true
+ *         type: integer
+ *     responses:
+ *       200:
+ *         description: A single product
+ *         schema:
+ *           $ref: '#/definitions/Products'
  */
 router.get('/id-search/:id', async (req, res) => {
     console.log('/:id running');
@@ -83,8 +146,40 @@ router.get('/id-search/:id', async (req, res) => {
 
 
 /**
- * Create new product
- * @returns response.
+ * @swagger
+ * /products/create:
+ *   post:
+ *     tags:
+ *       - products
+ *     description: Creates a new product
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: prodName
+ *         description: name of the product
+ *         in: body
+ *         required: true
+ *       - name: description
+ *         description: description of the product
+ *         in: body
+ *         required: true
+ *       - name: price
+ *         description: the price of the product
+ *         in: body
+ *         required: true
+ *       - name: quantity
+ *         description: number of the product in stock
+ *         in: body
+ *         required: true
+ *       - name: category
+ *         description: the category of the product
+ *         in: body
+ *         required: true
+ *         schema:
+ *           $ref: '#/definitions/Products'
+ *     responses:
+ *       200:
+ *         description: Successfully created
  */
 router.post('/create', async (req, res) => {
     console.log('/create running');
@@ -108,8 +203,23 @@ router.post('/create', async (req, res) => {
 });
 
 /**
- * Delete product from the products table
- * @returns Response.
+ * @swagger
+ * /api/products/delete:
+ *   delete:
+ *     tags:
+ *       - Product
+ *     description: Deletes a single product
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: productId
+ *         description: Product's id
+ *         in: body
+ *         required: true
+ *         type: integer
+ *     responses:
+ *       200:
+ *         description: successfully deleted
  */
 router.delete('/delete', async (req, res) => {
     console.log('/delete activated');
@@ -128,6 +238,30 @@ router.delete('/delete', async (req, res) => {
     }
 });
 
+/**
+* @swagger
+* /products/:
+*   put:
+*     tags: Products
+*     description: Updates a single product
+*     produces: application/json
+*     parameters:
+*      - name: productId
+*        in: body
+*        description: Id of the product to be updated
+*      - name: columnToUpdate
+*        in: body
+*        description: column of the user table to be updated
+*      - name: valueToInsert
+*        in: body
+*        description: New value to be inserted into the column
+*        schema:
+*         type: array
+*         $ref: '#/definitions/Products'
+*     responses:
+*       200:
+*         description: Successfully updated
+*/
 router.put('/', async(req, res) => {
     console.log('/put activated');
     

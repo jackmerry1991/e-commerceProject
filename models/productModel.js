@@ -34,6 +34,18 @@ module.exports = class ProductModel {
         }
     }
 
+    async updateQuantity(data){
+        try{
+            const getQuantityQuery = "SELECT quantity FROM products WHERE product_id = $1";
+            const oldQuantity = await db.query(getQuantityQuery, [data.productId]);
+            const newQuantity = oldQuantity - data.quantity;
+            const query = "UPDATE products SET quantity = $1 WHERE product_id = $2";
+            db.query(query, [newQuantity, data.productId])
+        }catch(err){
+            console.log(err);
+        }
+    }
+
     async searchByCategory(data){
         try{
             const query = "SELECT * FROM products WHERE category = $1";

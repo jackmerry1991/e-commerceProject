@@ -15,7 +15,19 @@ router.use(bodyParser.urlencoded({ extended: false }));
 router.use(bodyParser.json());
 
 /**
- * Return all users
+ * @swagger
+ * /user/users:
+ *   get:
+ *     tags:
+ *       - Users
+ *     description: Returns an array of users
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: All Users
+ *         schema:
+ *           $ref: '#/definitions/User'
  */
 router.get('/users', async (req, res) => {
     console.log('/user running');
@@ -31,7 +43,25 @@ router.get('/users', async (req, res) => {
 });
 
 /**
- * Return single user
+ * @swagger
+ * /User/{id}:
+ *   get:
+ *     tags:
+ *       - Users
+ *     description: Returns a single user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: id
+ *         description: User's id
+ *         in: path
+ *         required: true
+ *         type: integer
+ *     responses:
+ *       200:
+ *         description: A single user
+ *         schema:
+ *           $ref: '#/definitions/User'
  */
 router.get('/:id', async (req, res) => {
     console.log('/get-user running');
@@ -47,7 +77,52 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * Register new User
+ * @swagger
+ * /user/register:
+ *   post:
+ *     tags:
+ *       - Users
+ *     description: Creates a new user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: firstName
+ *         description: user's first name
+ *         in: body
+ *         required: true
+ *       - name: lastName
+ *         description: user's last name
+ *         in: body
+ *         required: true
+ *       - name: email
+ *         description: user's email address
+ *         in: body
+ *         required: true
+ *       - name: street
+ *         description: user's street name
+ *         in: body
+ *         required: true
+ *       - name: city
+ *         description: user's city name
+ *         in: body
+ *         required: true
+ *       - name: postcode
+ *         description: user's postcode
+ *         in: body
+ *         required: true
+ *       - name: password
+ *         description: user's password encrypted
+ *         in: body
+ *         required: true
+ *       - name: paymentDetails
+ *         description: user's payment details
+ *         in: body
+ *         required: true
+ *         schema:
+ *           $ref: '#/definitions/User'
+ *     responses:
+ *       200:
+ *         description: Successfully created
  */
 router.post('/register', async (req, res, next) => {
     console.log('/register');
@@ -59,6 +134,7 @@ router.post('/register', async (req, res, next) => {
         city: city,
         password: password,
         postCode: postCode,
+        paymentDetails: paymentDetails
         } = req.body;
         if(!email || !password || !street || !city || !postCode || !firstName || !lastName) return res.status(400).send('Insufficient data');
         try{
@@ -74,8 +150,29 @@ router.post('/register', async (req, res, next) => {
 
 
 /**
- * Update existing user
- */
+* @swagger
+* /user/:
+*   put:
+*     tags: User
+*     description: Updates a single user
+*     produces: application/json
+*     parameters:
+*      - name: userId
+*        in: body
+*        description: Id of the user to be updated
+*      - name: columnToUpdate
+*        in: body
+*        description: column of the user table to be updated
+*      - name: newValue
+*        in: body
+*        description: New value to be inserted into the column
+*        schema:
+*         type: array
+*         $ref: '#/definitions/User'
+*     responses:
+*       200:
+*         description: Successfully updated
+*/
 router.put('/', async (req, res) => {
     const data = {
         userId: userId,
@@ -99,7 +196,27 @@ router.put('/', async (req, res) => {
     }
 });
 
-//login route
+/**
+ * @swagger
+ * /users/login:
+ *   post:
+ *     tags: User
+ *     description: User login
+ *     produces: redirect
+ *     parameters:
+ *      - name: email
+ *        in: body
+ *        description: user's email address
+ *      - name: password
+ *        in: body
+ *        description: user's password
+ *        schema:
+ *         type: array
+ *         $ref: '#/definitions/User'
+ *     responses:
+ *       200:
+ *         description: Redirect
+ */
 router.post('/login',(req,res,next)=>{
     console.log('/login');
     passport.authenticate('local',{
@@ -109,7 +226,23 @@ router.post('/login',(req,res,next)=>{
     })
 
 /**
- * Delete existing user
+ * @swagger
+ * /api/users/delete:
+ *   delete:
+ *     tags:
+ *       - User
+ *     description: Deletes a single user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: userId
+ *         description: User's id
+ *         in: body
+ *         required: true
+ *         type: integer
+ *     responses:
+ *       200:
+ *         description: successfully deleted
  */
 router.delete('/delete', async (req, res) => {
     const userId = req.body.userId;
