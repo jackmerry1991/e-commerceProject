@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const OrderModel = require('../models/orderModel');
-const orderModelInstance = new OrderModel();
+const Order = require('../controllers/orderController');
+const order = new Order();
 const app = express();
 
 const router = express.Router();
@@ -32,7 +32,7 @@ router.get('/', async(req, res) => {
     const userId = req.body.userId;
     if(!userId) return res.status(400).send('Insufficient data');
     try{
-        const orders = await orderModelInstance.getAllUserOrders(userId);
+        const orders = await order.getAllUserOrders(userId);
         if(!orders) return res.status(200).send('User has no order history');
         res.json(orders);
     }catch(err){
@@ -72,7 +72,7 @@ router.get('/:id', async (req, res) => {
     if(!userId || !orderId) return res.status(400).send('Insufficient Data');
 
     try{
-        const order = await orderModelInstance.getOrderDetails(userId, orderId);
+        const order = await order.getOrderDetails(userId, orderId);
         if(!order) return res.status(200).send('No matching orders found');
         console.log(order);
         res.json(order);

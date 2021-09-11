@@ -1,8 +1,8 @@
 const express = require('express');
-const ProductModel = require('../models/productModel');
+const Product = require('../controllers/productController');
 const app = express();
 const router = express.Router();
-const productModelInstance = new ProductModel();
+const product = new Product();
 const bodyParser = require('body-parser');
 
 router.use(bodyParser.urlencoded({ extended: false }));
@@ -22,15 +22,7 @@ router.use(bodyParser.urlencoded({ extended: false }));
  *         schema:
  *           $ref: '#/definitions/User'
  */
-router.get('/', async (req, res) => {
-    try{
-        const result = await productModelInstance.getAllProducts();
-        res.json(result);
-    }catch(err){
-        console.log(err);
-        res.status(500).send('Internal Server Error');
-    }
-});
+router.get('/', product.list);
 
 /**
  * @swagger
@@ -53,23 +45,9 @@ router.get('/', async (req, res) => {
  *         schema:
  *           $ref: '#/definitions/Products'
  */
- router.get('/search', async(req, res) => {
-    console.log('calling /search');
-    const searchTerm = `%${req.body.searchTerm}%`;
-    console.log('search = ' + searchTerm);
-
-    if(!searchTerm) return res.status(400).send('Insufficient data');
-    console.log(typeof searchTerm);
-    if(typeof searchTerm !== 'string') return res.status(400).send('Incorrect data format');
-    try{
-        const searchResult = await productModelInstance.searchProduct(searchTerm);
-        if(!searchResult) return res.status(200).send('No products match your search');
-        res.json(searchResult);
-    } catch(err) {
-        console.log(err);
-        res.status(500).send('Internal server error');
-    }
-});
+ router.get('/search', product.searchProduct);
+ 
+ 
 
 /**
  * @swagger
@@ -92,19 +70,9 @@ router.get('/', async (req, res) => {
  *         schema:
  *           $ref: '#/definitions/Products'
  */
-router.get('/category-search', async (req, res) => {
-    const category = req.query.category;
-    console.log(category);
-    if(!category) return res.status(400).send('Insufficient data');
-    try{
-        const result = await productModelInstance.searchByCategory(category);
-        if(!result) return res.status(200).send('No results found');
-        res.json(result);
-    }catch(err){
-        console.log(err);
-        res.status(500).send('Internal Server Error');
-    }
-});
+router.get('/category-search', product.searchByCategory);
+    
+
 
 /**
  * @swagger
@@ -127,23 +95,7 @@ router.get('/category-search', async (req, res) => {
  *         schema:
  *           $ref: '#/definitions/Products'
  */
-router.get('/id-search/:id', async (req, res) => {
-    console.log('/:id running');
-    const productId = parseInt(req.params.id);
-    console.log(typeof productId);
-    if(!productId) return res.status(400).send('Insufficient data');
-    if(typeof(productId) !== 'number') return res.status(400).send('Incorrect data format');
-
-    try{
-        const result = await productModelInstance.getById(productId);
-        if(!result) return res.status(200).send('No product found');
-        res.json(result);
-    }catch(err){
-        console.log(err);
-        return res.status(500).send('Error accessing database');
-    }
-});
-
+router.get('/id-search/:id', product.getById);
 
 /**
  * @swagger
@@ -181,26 +133,28 @@ router.get('/id-search/:id', async (req, res) => {
  *       200:
  *         description: Successfully created
  */
-router.post('/create', async (req, res) => {
-    console.log('/create running');
-    const product = {
-        prodName: prodName,
-        description: description,
-        price: price,
-        quantity: quantity,
-        category: category
-    } = req.body;
-    console.log(description);
-    console.log(price);
-    if(!prodName || !description || !price || !quantity ) return res.status(400).send('Insufficient data provided');
-    try{
-        await productModelInstance.create(product);
-        res.send(`New product: ${prodName} has been added.`);
-    }catch(err){
-        console.log(err);
-        res.status(500).send(`Error accessing db`);
-    }
-});
+router.post('/create', product.create);
+    // '/create', async (req, res) => {
+    // console.log('/create running');
+    // const product = {
+    //     prodName: prodName,
+    //     description: description,
+    //     price: price,
+    //     quantity: quantity,
+    //     category: category
+    // } = req.body;
+    // console.log(description);
+    // console.log(price);
+    // if(!prodName || !description || !price || !quantity ) return res.status(400).send('Insufficient data provided');
+//     try{
+//         console.log(req.body);
+//         await product.create(req);
+//         //res.send(`New product: ${prodName} has been added.`);
+//     }catch(err){
+//         console.log(err);
+//         res.status(500).send(`Error accessing db`);
+//     }
+// });
 
 /**
  * @swagger
@@ -221,22 +175,7 @@ router.post('/create', async (req, res) => {
  *       200:
  *         description: successfully deleted
  */
-router.delete('/delete', async (req, res) => {
-    console.log('/delete activated');
-    const productId = req.body.productId;
-    console.log(productId);
-    if(!productId) return res.status(400).send('Insufficient data');
-
-    try{
-        const product = await productModelInstance.getById(productId);
-        if(!product) return res.status(200).send('No matching product found');
-        await productModelInstance.delete(productId);
-        res.send('Product deleted');
-    }catch(err){
-        console.log(err);
-        res.status(500).send('Error accessing the database');
-    }
-});
+router.delete('/delete',  product.delete);
 
 /**
 * @swagger
@@ -262,27 +201,28 @@ router.delete('/delete', async (req, res) => {
 *       200:
 *         description: Successfully updated
 */
-router.put('/', async(req, res) => {
-    console.log('/put activated');
+router.put('/', product.update);
+// => {
+    // console.log('/put activated');
     
-    const data = {
-        productId: productId,
-        columnToUpdate: columnToUpdate,
-        valueToInsert: valueToInsert
-    } = req.body;
+    // const data = {
+    //     productId: productId,
+    //     columnToUpdate: columnToUpdate,
+    //     valueToInsert: valueToInsert
+    // } = req.body;
 
-    if(!productId || !columnToUpdate || !valueToInsert) return res.status(400).send('Insufficient data provided');
+    // if(!productId || !columnToUpdate || !valueToInsert) return res.status(400).send('Insufficient data provided');
 
-    try{
-        const product = await productModelInstance.getById(productId);
-        if(!product) return res.status(200).send('No matching products found');
-        await productModelInstance.update(data);
-        res.send(`Product ${productId} updated.`);
-    }catch(err){
-        console.log(err);
-        res.status(500).send('Internal Server Error');
-    }
-});
+    // try{
+    //     const product = await product.getById(productId);
+    //     if(!product) return res.status(200).send('No matching products found');
+    //     await product.update(data);
+    //     res.send(`Product ${productId} updated.`);
+    // }catch(err){
+    //     // console.log(err);
+    //     res.status(500).send('Internal Server Error');
+    // }
+// });
 
 
 module.exports = router;

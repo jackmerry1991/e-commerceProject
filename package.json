@@ -16,7 +16,9 @@
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
-    "pg": "^8.6.0",
+    "pg": "^8.7.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.6.5",
     "swagger-jsdoc": "^1.3.0",
     "swagger-ui-express": "^4.1.6",
     "yamljs": "^0.3.0"

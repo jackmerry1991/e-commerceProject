@@ -1,11 +1,12 @@
 const bodyParser = require('body-parser');
-const userModel = require('../models/userModel');
-const userModelInstance = new userModel();
+const UserController = require('../controllers/userController');
+const user = new UserController();
 const express = require('express');
 const { isRejected } = require('@reduxjs/toolkit');
 const app = express();
 const router = express.Router();
 const passport = require('passport');
+const userController = require('../controllers/userController');
 
 
 
@@ -29,18 +30,7 @@ router.use(bodyParser.json());
  *         schema:
  *           $ref: '#/definitions/User'
  */
-router.get('/users', async (req, res) => {
-    console.log('/user running');
-    try{
-        const result = await userModelInstance.findAll();
-        console.log('result = ' + result.rows)
-        res.json(result.rows);
-
-    }catch(err){
-        console.log('error ' + err);
-        return res.status(500).send('Internal server error');
-    }
-});
+router.get('/users', user.list);
 
 /**
  * @swagger
@@ -63,18 +53,7 @@ router.get('/users', async (req, res) => {
  *         schema:
  *           $ref: '#/definitions/User'
  */
-router.get('/:id', async (req, res) => {
-    console.log('/get-user running');
-    const userId = req.params.id;
-    if(!req.params.id) return res.status(400).send('Insuffience data');
-    try{
-        const result = await userModelInstance.findUserById(userId);
-        if(!result) return res.status(200).send('No user found');
-        res.json(result);
-    }catch(err){
-        return res.status(500).send('Error retrieving results from database');
-    };
-});
+router.get('/:id', user.findUserById);
 
 /**
  * @swagger
@@ -124,29 +103,7 @@ router.get('/:id', async (req, res) => {
  *       200:
  *         description: Successfully created
  */
-router.post('/register', async (req, res, next) => {
-    console.log('/register');
-    const userDetails = {
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        street: street,
-        city: city,
-        password: password,
-        postCode: postCode,
-        paymentDetails: paymentDetails
-        } = req.body;
-        if(!email || !password || !street || !city || !postCode || !firstName || !lastName) return res.status(400).send('Insufficient data');
-        try{
-            const user = await userModelInstance.findUserByEmail(email);
-        if(user) return res.status(200).send('User already exists');
-        await userModelInstance.create(userDetails);
-        res.send(`User ${email} added successfully`);
-    }catch(err){
-        res.status(500).send('Error updating DB. Internal Server Error.');
-        console.log(err);
-    }   
-});
+router.post('/register', user.create);
 
 
 /**
@@ -173,28 +130,8 @@ router.post('/register', async (req, res, next) => {
 *       200:
 *         description: Successfully updated
 */
-router.put('/', async (req, res) => {
-    const data = {
-        userId: userId,
-        columnToUpdate: columnToUpdate,
-        newValue: newValue
-    } = req.body;
-    console.log(userId);
-    console.log(columnToUpdate);
-    console.log(newValue);
-    if(!userId) return res.status(400).send('Insufficient Data.');
+router.put('/', user.update);
 
-    try{
-        const user = await userModelInstance.findUserById(userId);
-        if(!user) return res.status(400).send('User not found');
-        console.log('user found');
-        await userModelInstance.update(data);
-        res.status(200).send(`User ${userId} successfully updated`);
-    }catch(err){
-        res.status(500).send('Error accessing DB');
-        console.log(err);
-    }
-});
 
 /**
  * @swagger
@@ -244,21 +181,6 @@ router.post('/login',(req,res,next)=>{
  *       200:
  *         description: successfully deleted
  */
-router.delete('/delete', async (req, res) => {
-    const userId = req.body.userId;
-
-    if(!userId) return res.status(400).send('Insufficent data provided.');
-
-    try{
-        const user = await userModelInstance.findUserById(userId);
-        if(!user) return res.status(404).send('User not found.');
-        console.log('user to be deleted exists');
-        userModelInstance.delete(userId);
-        console.log(user);
-        res.send(`${user[0].email} deleted`);
-    }catch(err){
-        res.status(500).send(err);
-    }
-});
+router.delete('/delete', user.delete);
 
 module.exports = router;

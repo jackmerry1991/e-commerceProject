@@ -1,12 +1,12 @@
 const LocalStrategy = require('passport-local').Strategy;
 const bcrypt = require('bcrypt');
-const User = require("../models/userModel");
-const userModelInstance = new User();
+const User = require("../controllers/userController");
+const user = new User();
 
 
 module.exports = function initialize(passport, getUserByEmail, getUserById) {
     const authenticateUser = async (email, password, done) => {
-      const user = await userModelInstance.findUserByEmail(email)
+      const user = await user.findUserByEmail(email)
       if (user == null) {
         return done(null, false, { message: 'No user with that email' })
       }
@@ -28,7 +28,7 @@ module.exports = function initialize(passport, getUserByEmail, getUserById) {
     passport.use(new LocalStrategy({ usernameField: 'email' }, authenticateUser))
     passport.serializeUser((user, done) => done(null, user.user_id))
     passport.deserializeUser((id, done) => {
-      return done(null, userModelInstance.findUserById(id))
+      return done(null, user.findUserById(id))
     })
   }
   
@@ -42,7 +42,7 @@ module.exports = function initialize(passport, getUserByEmail, getUserById) {
 //     passport.use(
 //         new LocalStrategy({usernameField : 'email'},(email,password,done)=> {
 //                 //match user
-//                 userModelInstance.findUserByEmail(email)
+//                 user.findUserByEmail(email)
 //                 .then((user)=>{
 //                  if(!user) {
 //                      console.log('user not registered');
@@ -72,7 +72,7 @@ module.exports = function initialize(passport, getUserByEmail, getUserById) {
       
 //     // passport.deserializeUser(async (id, done) => {
 //     //     console.log('deserialize');
-//     //     const user = await userModelInstance.findUserById(id);
+//     //     const user = await user.findUserById(id);
         
 //     //     const finish = (err, user) => {
 //     //     console.log('done');
@@ -81,7 +81,7 @@ module.exports = function initialize(passport, getUserByEmail, getUserById) {
 //     //     finish(user);
 //     //   }); 
 
-//     passport.serializeUser((user, done) => done(null, userModelInstance.user_id))
+//     passport.serializeUser((user, done) => done(null, user.user_id))
 //     passport.deserializeUser((id, done) => {
 //       return done(null, findUserById(id))
 //     })
