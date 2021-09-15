@@ -1,7 +1,18 @@
 const db = require('../database/dbConnection.js');
 const Cart = require('../models/').Cart;
 const Order = require('../models/').Order;
-
+const Sequelize = require('sequelize');
+const sequelize = new Sequelize(process.env.PGDATABASE, process.env.PGUSER, process.env.PGPASSWORD, {
+    host: process.env.PGHOST,
+    dialect: 'postgres',
+  
+    pool: {
+      max: 5,
+      min: 0,
+      acquire: 30000,
+      idle: 10000
+    },
+})
 module.exports = class OrderController{
 
     /**
@@ -9,15 +20,20 @@ module.exports = class OrderController{
      * @param {*} data 
      * @returns 
      */
-    async getAllUserOrders(data){
+    async getAllUserOrders(req, res){
+        console.log('/get-all-orders')
+        if(!req.body.userId) return res.status(400).send('Insufficient data');
+        const userId = req.body.userId;
         try{
-            const query = 'SELECT * FROM orders WHERE user_id = $1';
-            const result = await db.query(query, [data]);
-            if(result.rows.length < 1) return null;
-            return result.rows;
-        }catch(err){
-            console.log(err);
-        }
+            const orders = await Order.findAll({
+                where:{user_id: userId}
+            });
+            if(!orders) return res.status(200).send('User has no order history');
+            res.json(orders);
+    }catch(err){
+        res.status(500).send('Internal Server Error');
+    }
+        
     }
 
     /**
@@ -26,14 +42,18 @@ module.exports = class OrderController{
      * @param {*} orderId 
      * @returns 
      */
-    async getOrderDetails(userId, orderId){
+    async getOrderDetails(req, res){
+        if(!req.body.userId || !req.params.id) return res.status(400).send('Insufficient data');
+        const userId = req.body.userId;
+        const orderId = req.params.id;
         try{
-            const query = 'SELECT * FROM orders WHERE user_id = $1 AND id = $2';
-            const result = await db.query(query, [userId, orderId]);
-            if(result.rows.length < 1) return null;
-            return result.rows;
+            const order = await sequelize.query(`SELECT products.name, products.price, cart_products.quantity_ordered, orders.date_ordered FROM products JOIN cart_products ON products.id = cart_products.product_id JOIN orders ON orders.cart_id = cart_products.cart_id WHERE orders.id = ${orderId};`);
+            if(!Array.isArray(order)) return res.status(500).send('Internal Server Error');
+            if(order.length[0] < 1) return res.send('No orders found');
+            return res.json(order[0]);
         }catch(err){
             console.log(err);
+            return res.status(500).send('Internal Server Error');
         }
     }
 
@@ -46,10 +66,10 @@ module.exports = class OrderController{
      */
     async create(userId, cartId, successfulPayment, cart){
         console.log('create order');
+        console.log(successfulPayment);
         const date = new Date();
-        let dateTimeOfOrder = date.getFullYear + date.getMonth + date.getDate + date.getHours + date.getMinutes;
-        dateTimeOfOrder = dateTimeOfOrder.toString();
-        console.log(date);
+        const dateTimeOfOrder = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}, ${date.getHours()}:${date.getMinutes()}`;
+        console.log(dateTimeOfOrder);
         let orderTotal = cart.map(order => {
             console.log(order);
             return order.order_total;
@@ -62,7 +82,7 @@ module.exports = class OrderController{
                 cart_id: cartId,
                 date_ordered: dateTimeOfOrder,
                 total_cost: orderTotal,
-                successful_payment: successfulPayment
+                payment_received: successfulPayment
             });
             return true;
         }catch(err){

@@ -28,17 +28,7 @@ router.use(bodyParser.urlencoded({ extended: false }));
  *         schema:
  *           $ref: '#/definitions/Orders'
  */
-router.get('/', async(req, res) => {
-    const userId = req.body.userId;
-    if(!userId) return res.status(400).send('Insufficient data');
-    try{
-        const orders = await order.getAllUserOrders(userId);
-        if(!orders) return res.status(200).send('User has no order history');
-        res.json(orders);
-    }catch(err){
-        res.status(500).send('Internal Server Error');
-    }
-});
+router.get('/', order.getAllUserOrders);
 
 /**
  * @swagger
@@ -66,20 +56,6 @@ router.get('/', async(req, res) => {
  *         schema:
  *           $ref: '#/definitions/Order'
  */
-router.get('/:id', async (req, res) => {
-    const userId = req.body.userId;
-    const orderId = req.params.id;
-    if(!userId || !orderId) return res.status(400).send('Insufficient Data');
-
-    try{
-        const order = await order.getOrderDetails(userId, orderId);
-        if(!order) return res.status(200).send('No matching orders found');
-        console.log(order);
-        res.json(order);
-    }catch(err){
-        console.log(err);
-        res.status(500).send('Internal Server Error');
-    }
-});
+router.get('/:id', order.getOrderDetails);
 
 module.exports = router;

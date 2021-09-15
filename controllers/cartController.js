@@ -5,6 +5,9 @@ const Product = require('../models').Product;
 const User = require('../models').User;
 const OrderController = require('../controllers/orderController');
 const orderController = new OrderController();
+const ProductController = require('../controllers/productController');
+const productController = new ProductController();
+
 const Sequelize = require('sequelize');
 const sequelize = new Sequelize(process.env.PGDATABASE, process.env.PGUSER, process.env.PGPASSWORD, {
     host: process.env.PGHOST,
@@ -16,7 +19,7 @@ const sequelize = new Sequelize(process.env.PGDATABASE, process.env.PGUSER, proc
       acquire: 30000,
       idle: 10000
     },
-})
+});
 
 module.exports = class CartController {
     /**
@@ -212,7 +215,7 @@ async updateQuantity (req, res){
             }
 
             //TODO FIX SO THAT DATE ORDERED AND PAYMENT RECEIVED STORES CORRECTLY, UPDATE SWAGGER AND DOCS.
-            const orderSuccessful = await orderController.create(userId, cartId, paymentDetailsEntered, currentCartTotal[0]);
+            const orderSuccessful = await orderController.create(userId, cartId, successfulPayment, currentCartTotal[0]);
 
             if(orderSuccessful){
                 const update = await Cart.update({
@@ -220,7 +223,13 @@ async updateQuantity (req, res){
                     {where: {id: cartId},
                     returning: true
                 });
-                res.send('Order successfully created');
+                const quantityOrdered = await CartProducts.findAll({
+                    where: {cart_id: cartId}
+                });
+                console.log('final');
+                console.log(currentCartTotal[0]);
+                //TO DO UPDATE QUANTITY OF PRODUCT IN STOCK AFTER CHECKOUT
+                return res.send('Order successfully created');
             }
             return res.status(500).send('Internal Server Error.');
         }catch(err){

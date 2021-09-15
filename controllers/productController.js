@@ -65,17 +65,19 @@ module.exports = class ProductController {
         }
     }
 
-    async updateQuantity(data){
+    //NEED PRODUCT ID
+    async updateQuantity(newQuantity, productId){
+        console.log(newQuantity);
+        console.log(productId)
         try{
-            
             const currentQuantity = await Product.findAll({
                 attributes:['quantity'],
                 where:{
-                    id: data.productId
+                    id: productId
                 }
             });
 
-            const newQuantity = currentQuantity - data.quantity;
+            const newQuantity = currentQuantity - quantity;
             Product.update({
                 quantity: newQuantity,
             },
