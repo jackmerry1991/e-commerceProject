@@ -6,8 +6,7 @@ const { isRejected } = require('@reduxjs/toolkit');
 const app = express();
 const router = express.Router();
 const passport = require('passport');
-const userController = require('../controllers/userController');
-
+const jwt = require('jsonwebtoken');
 
 
 router.use(bodyParser.urlencoded({ extended: false }));
@@ -154,13 +153,30 @@ router.put('/', user.update);
  *       200:
  *         description: Redirect
  */
-router.post('/login',(req,res,next)=>{
+router.post('/login', (req,res, next)=>{
     console.log('/login');
-    passport.authenticate('local',{
-        successRedirect : '/dashboard',
-        failureRedirect: '/users/login',
-    })(req,res,next)
-    })
+    
+     passport.authenticate('local', {session: false}, (err, user, info) => {
+        if (err || !user) {
+            return res.status(400).json({
+                message: 'Something is not right',
+                user   : user
+            });
+        }
+       req.login(user, {session: false}, (err) => {
+           if (err) {
+               res.send(err);
+           }
+           // generate a signed son web token with the contents of user object and return it in the response
+           const token = jwt.sign({
+            user,
+           },
+             process.env.SECRET, {expiresIn: '2h'});
+           return res.json({token});
+        });
+    })(req, res, next);
+});
+
 
 /**
  * @swagger

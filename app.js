@@ -5,7 +5,6 @@ const express = require('express');
 const passport = require('passport');
 const indexRouter = require('./routes/index');
 const swaggerJSDoc = require('swagger-jsdoc');
-require("./config/passport")(passport);
 
 const app = express();
 // swagger definition
@@ -29,14 +28,15 @@ const options = {
   
 // initialize swagger-jsdoc
 const swaggerSpec = swaggerJSDoc(options);
-const port = 3000; 
+const port = 8000; 
 app.use(session({
-    secret: 'secret',
+    secret: process.env.SECRET,
     resave: true,
     saveUninitialized: true
 }));
 app.use(passport.initialize());
 app.use(passport.session());
+require('./config/passport');
 app.use(express.static(path.join(__dirname, 'public')));
 
 //user routes move to users.js after this initial test
