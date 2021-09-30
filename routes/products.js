@@ -4,6 +4,18 @@ const app = express();
 const router = express.Router();
 const product = new Product();
 const bodyParser = require('body-parser');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/images')
+    },
+    filename: (req, file, cb) => {
+        cb(null, String(Date.now()), + ' - ' + file.originalname)
+    }
+});
+const uploads = multer({storage});
 
 router.use(bodyParser.urlencoded({ extended: false }));
 
@@ -202,27 +214,13 @@ router.delete('/delete',  product.delete);
 *         description: Successfully updated
 */
 router.put('/', product.update);
-// => {
-    // console.log('/put activated');
-    
-    // const data = {
-    //     productId: productId,
-    //     columnToUpdate: columnToUpdate,
-    //     valueToInsert: valueToInsert
-    // } = req.body;
 
-    // if(!productId || !columnToUpdate || !valueToInsert) return res.status(400).send('Insufficient data provided');
 
-    // try{
-    //     const product = await product.getById(productId);
-    //     if(!product) return res.status(200).send('No matching products found');
-    //     await product.update(data);
-    //     res.send(`Product ${productId} updated.`);
-    // }catch(err){
-    //     // console.log(err);
-    //     res.status(500).send('Internal Server Error');
-    // }
-// });
+//TODO DOCUMENT API ROUTE, ADD IMAGE PATH TO PRODUCTIMAGE TABLE.
+router.post('/store-product-image', uploads.single('image'), product.uploadImage)
+
+//TODO COMPLETE ROUTE AND DOCUMENT IS THIS NECESSARY OR SHOULD THE IMAGE PATHS BE PASSED BACK WITH THE DATA - WAIT UNTIL FRONT END TO IMPLEMENT???
+router.get('/retrieve-image')
 
 
 module.exports = router;

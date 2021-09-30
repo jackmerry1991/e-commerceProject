@@ -1,4 +1,15 @@
 const Product = require('../models/').Product;
+const ProductImage = require('../models/').ProductImage;
+const multer = require('multer');
+const storage = multer.diskStorage({
+    destination: () => {
+        cb(null, '..uploads/images')
+    },
+    filename: () => {
+        cb(null, file.originalName)
+    }
+});
+const uploads = multer({storage});
 const {Op} = require('sequelize');
 
 
@@ -168,5 +179,23 @@ module.exports = class ProductController {
             console.log(err);
             res.status(500).send('Internal Server error')
         }
+    }
+
+    async uploadImage(req, res){
+        console.log('/store-product-image');
+        if(!req.body.productId || !req.file.path) return res.status(400).send('Insufficient Data');
+        const image = req.file.path;
+        const imagePriority = await ProductImage.count({
+            where: {product_id: req.body.productId}
+        });
+        console.log(imagePriority);
+
+        console.log(image);
+        await ProductImage.create({
+            product_id: req.body.productId,
+            image_name: image,
+            image_priority: imagePriority + 1
+        });
+        res.json({msg: 'Image successfully created'});
     }
 } 
