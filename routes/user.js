@@ -153,12 +153,12 @@ router.put('/', user.update);
  *       200:
  *         description: Redirect
  */
-router.post('/login', (req,res, next)=>{
+router.post('/login', (req, res, next)=>{
     console.log('/login');
-    
+    console.log(req);
      passport.authenticate('local', {session: false}, (err, user, info) => {
         if (err || !user) {
-            return res.status(400).json({
+            return res.status(401).json({
                 message: 'Something is not right',
                 user   : user
             });
@@ -172,6 +172,7 @@ router.post('/login', (req,res, next)=>{
             user,
            },
              process.env.SECRET, {expiresIn: '2h'});
+             res.cookie('token', token, { httpOnly: true });
            return res.json({token});
         });
     })(req, res, next);

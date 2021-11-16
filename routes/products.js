@@ -1,21 +1,21 @@
-const express = require('express');
-const Product = require('../controllers/productController');
+const express = require("express");
+const Product = require("../controllers/productController");
 const app = express();
 const router = express.Router();
 const product = new Product();
-const bodyParser = require('body-parser');
-const path = require('path');
-const fs = require('fs');
-const multer = require('multer');
+const bodyParser = require("body-parser");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/images')
-    },
-    filename: (req, file, cb) => {
-        cb(null, String(Date.now()), + ' - ' + file.originalname)
-    }
+  destination: (req, file, cb) => {
+    cb(null, "uploads/images");
+  },
+  filename: (req, file, cb) => {
+    cb(null, String(Date.now()), +" - " + file.originalname);
+  },
 });
-const uploads = multer({storage});
+const uploads = multer({ storage });
 
 router.use(bodyParser.urlencoded({ extended: false }));
 
@@ -34,7 +34,7 @@ router.use(bodyParser.urlencoded({ extended: false }));
  *         schema:
  *           $ref: '#/definitions/User'
  */
-router.get('/', product.list);
+router.get("/", product.list);
 
 /**
  * @swagger
@@ -57,9 +57,7 @@ router.get('/', product.list);
  *         schema:
  *           $ref: '#/definitions/Products'
  */
- router.get('/search', product.searchProduct);
- 
- 
+router.get("/search", product.searchProduct);
 
 /**
  * @swagger
@@ -82,9 +80,7 @@ router.get('/', product.list);
  *         schema:
  *           $ref: '#/definitions/Products'
  */
-router.get('/category-search', product.searchByCategory);
-    
-
+router.get("/category-search", product.searchByCategory);
 
 /**
  * @swagger
@@ -107,7 +103,7 @@ router.get('/category-search', product.searchByCategory);
  *         schema:
  *           $ref: '#/definitions/Products'
  */
-router.get('/id-search/:id', product.getById);
+router.get("/id-search/:id", product.getById);
 
 /**
  * @swagger
@@ -145,19 +141,19 @@ router.get('/id-search/:id', product.getById);
  *       200:
  *         description: Successfully created
  */
-router.post('/create', product.create);
-    // '/create', async (req, res) => {
-    // console.log('/create running');
-    // const product = {
-    //     prodName: prodName,
-    //     description: description,
-    //     price: price,
-    //     quantity: quantity,
-    //     category: category
-    // } = req.body;
-    // console.log(description);
-    // console.log(price);
-    // if(!prodName || !description || !price || !quantity ) return res.status(400).send('Insufficient data provided');
+router.post("/create", product.create);
+// '/create', async (req, res) => {
+// console.log('/create running');
+// const product = {
+//     prodName: prodName,
+//     description: description,
+//     price: price,
+//     quantity: quantity,
+//     category: category
+// } = req.body;
+// console.log(description);
+// console.log(price);
+// if(!prodName || !description || !price || !quantity ) return res.status(400).send('Insufficient data provided');
 //     try{
 //         console.log(req.body);
 //         await product.create(req);
@@ -187,40 +183,42 @@ router.post('/create', product.create);
  *       200:
  *         description: successfully deleted
  */
-router.delete('/delete',  product.delete);
+router.delete("/delete", product.delete);
 
 /**
-* @swagger
-* /products/:
-*   put:
-*     tags: Products
-*     description: Updates a single product
-*     produces: application/json
-*     parameters:
-*      - name: productId
-*        in: body
-*        description: Id of the product to be updated
-*      - name: columnToUpdate
-*        in: body
-*        description: column of the user table to be updated
-*      - name: valueToInsert
-*        in: body
-*        description: New value to be inserted into the column
-*        schema:
-*         type: array
-*         $ref: '#/definitions/Products'
-*     responses:
-*       200:
-*         description: Successfully updated
-*/
-router.put('/', product.update);
-
+ * @swagger
+ * /products/:
+ *   put:
+ *     tags: Products
+ *     description: Updates a single product
+ *     produces: application/json
+ *     parameters:
+ *      - name: productId
+ *        in: body
+ *        description: Id of the product to be updated
+ *      - name: columnToUpdate
+ *        in: body
+ *        description: column of the user table to be updated
+ *      - name: valueToInsert
+ *        in: body
+ *        description: New value to be inserted into the column
+ *        schema:
+ *         type: array
+ *         $ref: '#/definitions/Products'
+ *     responses:
+ *       200:
+ *         description: Successfully updated
+ */
+router.put("/", product.update);
 
 //TODO DOCUMENT API ROUTE, ADD IMAGE PATH TO PRODUCTIMAGE TABLE.
-router.post('/store-product-image', uploads.single('image'), product.uploadImage)
+router.post(
+  "/store-product-image",
+  uploads.single("image"),
+  product.uploadImage
+);
 
 //TODO COMPLETE ROUTE AND DOCUMENT IS THIS NECESSARY OR SHOULD THE IMAGE PATHS BE PASSED BACK WITH THE DATA - WAIT UNTIL FRONT END TO IMPLEMENT???
-router.get('/retrieve-image')
-
+router.get("/retrieve-image");
 
 module.exports = router;

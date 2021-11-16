@@ -16,9 +16,10 @@ passport.use(new LocalStrategy({
         });
         console.log('user =')
         console.log(user);
+        if(!user) return cb(null, false, {message: 'Incorrect email or password.'})
         const passwordMatch = await bcrypt.compare(password, user.dataValues.password);
         console.log(passwordMatch);
-        if (!user || !passwordMatch) {
+        if (!passwordMatch) {
           return cb(null, false, {message: 'Incorrect email or password.'});
         }
         return cb(null, user.dataValues, {message: 'Logged In Successfully'});
