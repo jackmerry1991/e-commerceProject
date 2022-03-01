@@ -15,7 +15,11 @@ const { Op } = require("sequelize");
 module.exports = class ProductController {
   async list(req, res) {
     try {
-      const products = await Product.findAll();
+      const products = await Product.findAll({
+        include: {
+        model: ProductImage,
+        as: 'productImage',
+    }});
       console.log(products);
       if (products.length < 1) return res.status(404).send("No products found");
       return res.json(products);
@@ -37,6 +41,10 @@ module.exports = class ProductController {
         where: {
           id: productId,
         },
+        include: {
+          model: ProductImage,
+          as: 'productImage',
+      }
       });
       if (result.length < 1) return res.status(404).send("No products found");
       return res.json(result);
@@ -57,6 +65,10 @@ module.exports = class ProductController {
 
     try {
       const searchResult = await Product.findAll({
+        include: {
+          model: ProductImage,
+          as: 'productImage',
+        },
         where: {
           [Op.or]: {
             name: {

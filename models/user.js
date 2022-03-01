@@ -28,7 +28,6 @@ module.exports = (sequelize, DataTypes) => {
     street: DataTypes.STRING,
     city: DataTypes.STRING,
     post_code: DataTypes.STRING,
-    payment_details: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'User',

@@ -6,7 +6,10 @@ const User = require('../models').User;
 const OrderController = require('../controllers/orderController');
 const orderController = new OrderController();
 const ProductController = require('../controllers/productController');
+const Order = require('../models/').Order;
 const productController = new ProductController();
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
+
 
 const Sequelize = require('sequelize');
 const sequelize = new Sequelize(process.env.PGDATABASE, process.env.PGUSER, process.env.PGPASSWORD, {
@@ -30,12 +33,12 @@ module.exports = class CartController {
     async findActtiveCart(req, res){
         //need to filter by user and whether cart is open.
         console.log('cart/:id running');
-        if(!req.params.id) return res.status(400).send('Insufficient data');
-        const userId = req.params.id;
+        if(!req.user.id) return res.status(400).send('Insufficient data');
+        const userId = req.user.id;
         console.log(userId);
         try{
             //raw query as sequelize cannot accurately count products ordered.
-            const activeCart = await sequelize.query(`SELECT products.name, cart_products.quantity_ordered FROM products JOIN cart_products on products.id = cart_products.product_id JOIN carts on cart_products.cart_id = carts.id WHERE carts.checked_out = false AND carts.user_id = ${userId};`);
+            const activeCart = await sequelize.query(`SELECT cart_products.product_id, carts.id, products.name, cart_products.quantity_ordered, products.price FROM products JOIN cart_products on products.id = cart_products.product_id JOIN carts on cart_products.cart_id = carts.id WHERE carts.checked_out = false AND carts.user_id = ${userId};`);
             if(!activeCart) return res.status(200).send('No active cart found');
             return res.json(activeCart[0]);
         }catch(err){
@@ -51,11 +54,13 @@ module.exports = class CartController {
      */
     async deleteItem(req, res){
         console.log('/remove-item');
-    if(!req.body.userId || !req.body.productId) return res.status(400).send('Insufficient data.')
+        console.log(req.body);
+    if(!req.user.id || !req.body.productId) return res.status(400).send('Insufficient data.')
     const productId = parseInt(req.body.productId);
+    const userId = req.user.id;
     const cartId = await Cart.findAll({
         where: {
-            user_id: req.body.userId,
+            user_id: userId,
             checked_out: false
         },
         include: {
@@ -83,7 +88,10 @@ module.exports = class CartController {
                     where: {id: cartId[0].dataValues.id}
                 });
             }
-            return res.send('Item successfully removed from cart.');
+            //TODO RETURN NEW CART LIST
+            const newCartList = await sequelize.query(`SELECT cart_products.product_id, carts.id, products.name, cart_products.quantity_ordered, products.price FROM products JOIN cart_products on products.id = cart_products.product_id JOIN carts on cart_products.cart_id = carts.id WHERE carts.checked_out = false AND carts.user_id = ${userId};`);
+            if(!newCartList) return res.status(200).send('No active cart found');
+            return res.json(newCartList[0]);
         }catch(err){
             console.log(err);
             return false;
@@ -123,9 +131,13 @@ async updateQuantity (req, res){
      */
     async addItem(req, res){
         console.log('/add-item');
-        console.log('body' + req.body.userId);
-        if(!req.body.userId || !req.body.productId || !req.body.quantity) return res.status(400).send('Insufficient data');
-        const userId = req.body.userId;
+        console.log('body' + req.body);
+        console.log(req.body);
+        if(!req.body.productId || !req.body.quantity) return res.status(400).send('Insufficient data');
+        const userId = req.user.id;
+        console.log('request: ');
+        console.log(req);
+        console.log('user id = ' + userId);
         const productId = req.body.productId;
         const quantity = parseInt(req.body.quantity);
         console.log('quantity = ' + quantity)
@@ -156,10 +168,12 @@ async updateQuantity (req, res){
             }else{
                 openCartId = openCart[0].dataValues.id;
                 //check product does not exist
-                const oldQuantity = await CartProducts.findAll({
+                let oldQuantity = await CartProducts.findAll({
                     where:{cart_id: openCartId, product_id: productId}
                 });
+                console.log('old quantity ')
                 console.log(oldQuantity);
+                //oldQuantity = oldQuantity[0].dataValues.quantity_ordered;
                 if(oldQuantity.length < 1){
                     CartProducts.create({
                         cart_id: openCartId,
@@ -167,12 +181,18 @@ async updateQuantity (req, res){
                         quantity_ordered: quantity
                     });
                 }else{
-                    console.log('old' + oldQuantity);
-                    const newQuantity = oldQuantity[0].dataValues.quantity_ordered + quantity;
-                    console.log('new' + newQuantity);
+                    oldQuantity = oldQuantity[0].dataValues.quantity_ordered;
+                    console.log(oldQuantity);
+                    console.log('qauntity');
+                    console.log(typeof quantity)
+                    let numQuantity = Number(quantity);
+                    let numOldQuantity = Number(oldQuantity);
+                    const newQuantity = numOldQuantity + numQuantity;
+                    console.log(newQuantity);
+                    console.log(newQuantity);
                     await CartProducts.update({
                         quantity_ordered: newQuantity},
-                        {where: {cart_id: openCartId}
+                        {where: {cart_id: openCartId, product_id: productId}
                     });
                 }
             }
@@ -191,46 +211,82 @@ async updateQuantity (req, res){
      */
     async checkOut(req, res){
         console.log('/checkout');
-        console.log(req.params.id);
-        if(!req.params.id || !req.body.userId || !req.body.paymentDetailsEntered) return res.status(400).send('Insufficient Data'); 
-        const cartId = req.params.id;
-        const userId = req.body.userId;
-        const paymentDetailsEntered = req.body.paymentDetailsEntered;
+        if(!req.body.cardHolderName || !req.body.paymentMethod) return res.status(400).send('Insufficient Data'); 
+        const userId = req.user.id;
+        const paymentMethod = req.body.paymentMethod;
+
         try{
-            const currentCartTotal = await sequelize.query(`SELECT cart_products.product_id, SUM(quantity_ordered * products.price) as order_total FROM cart_products JOIN products ON cart_products.product_id = products.id JOIN carts ON cart_products.cart_id = carts.id WHERE cart_products.cart_id = ${cartId} AND carts.checked_out = false GROUP BY cart_products.product_id;`);
+            //get user's active cart
+            const [cartDetails, cardDetailsMetaData] = await sequelize.query(`SELECT * from carts where user_id = ${userId} and checked_out = false`);
+            console.log('cartDetails:')
+            console.log(cartDetails);
+            //get cart total
+            const [currentCartTotal, metaData] = await sequelize.query(`SELECT cart_products.product_id, SUM(quantity_ordered * products.price) as order_total FROM cart_products JOIN products ON cart_products.product_id = products.id JOIN carts ON cart_products.cart_id = carts.id WHERE carts.user_id = ${userId} AND carts.checked_out = false GROUP BY cart_products.product_id;`);
             console.log('cart')
-            if(!Array.isArray(currentCartTotal)) return res.status(500).send('Internal Server Error');
-            console.log(currentCartTotal[0]);
-            if(currentCartTotal[0].length < 1) return res.send('No matching cart found');
+            console.log(currentCartTotal);
+            if(!Array.isArray(currentCartTotal) || !Array.isArray(cartDetails)) return res.status(500).send('Internal Server Error');
+            console.log('cart')
+            console.log(currentCartTotal);
+            if(currentCartTotal.length < 1 || cartDetails.length < 1) return res.send('No matching cart found');
             console.log("cart exists ." + currentCartTotal);
-
+            let amount = 0;
+            
+            currentCartTotal.forEach((orderRow) => {
+                console.log('loop');
+                console.log(orderRow);
+                amount += orderRow.order_total;
+            })
+            amount = amount.toFixed(2);
+            console.log('to fixed');
+            console.log(amount);
+            console.log(typeof amount)
+            console.log('payment method:')
+            console.log(paymentMethod.id);
             let successfulPayment = false;
-            const paymentDetails = await User.findAll({
-                attributes: ["payment_details"],
-                where: {id: userId}
-            });
-            if(paymentDetails.length < 1) return res.status(404).send('No matching user found');
-            if(paymentDetails[0].dataValues.payment_details === paymentDetailsEntered){
-                successfulPayment = true;
-            }
-
-            //TODO FIX SO THAT DATE ORDERED AND PAYMENT RECEIVED STORES CORRECTLY, UPDATE SWAGGER AND DOCS.
-            const orderSuccessful = await orderController.create(userId, cartId, successfulPayment, currentCartTotal[0]);
-
+            try{
+                const payment = await stripe.paymentIntents.create({
+                    amount: amount*100,
+                    currency: "GBP",
+                    description: "Company Description is e-commerce test site",
+                    payment_method: paymentMethod.id,
+                    confirm: true,
+                });
+            successfulPayment = true;
+            console.log('stripe response')
+            console.log(payment);
+            console.log(cartDetails[0])
+            const date = new Date();
+            const dateOfOrder = new Date().toISOString().slice(0, 10);
+            const dateTimeOfOrder = `${dateOfOrder}, ${date.toLocaleTimeString()}`;
+            console.log(dateOfOrder);
+            // const timeOfOrder
+            // console.log('dateTimeOfOrder ' + dateTimeOfOrder);
+            console.log(date);
+            // console.log(`userId: ${userId}, cartId: ${cartDetails[0][0].id}, ${dateNow}, ${payment.id}, ${currentCartTotal}`)
+            // const orderSuccessful = await order(userId, cartDetails[0][0].id, dateNow, payment.id, amount, successfulPayment);
+            const orderSuccessful = await Order.create({
+                                        user_id: userId,
+                                        cart_id: cartDetails[0].id,
+                                        date_ordered: dateTimeOfOrder,
+                                        stripe_confirmation: payment.id,
+                                        total_cost: amount,
+                                        payment_received: successfulPayment
+                                    });
             if(orderSuccessful){
                 const update = await Cart.update({
                     checked_out: true},
-                    {where: {id: cartId},
+                    {where: {id: cartDetails[0].id},
                     returning: true
                 });
-                const quantityOrdered = await CartProducts.findAll({
-                    where: {cart_id: cartId}
-                });
+
                 console.log('final');
                 console.log(currentCartTotal[0]);
                 //TO DO UPDATE QUANTITY OF PRODUCT IN STOCK AFTER CHECKOUT
                 return res.send('Order successfully created');
             }
+        }catch(error){
+            console.log(error);
+        }
             return res.status(500).send('Internal Server Error.');
         }catch(err){
             console.log(err);

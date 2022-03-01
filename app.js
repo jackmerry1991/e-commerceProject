@@ -2,6 +2,8 @@ require("dotenv").config("./.env");
 const path = require("path");
 const session = require("express-session");
 const express = require("express");
+const bodyParser = require('body-parser');
+const jsonParser = bodyParser.json();
 const passport = require("passport");
 const indexRouter = require("./routes/index");
 const swaggerJSDoc = require("swagger-jsdoc");
@@ -42,7 +44,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 require("./config/passport");
 app.use(express.static(path.join(__dirname, "public")));
-
+app.use("/uploads/images", express.static(__dirname + '/uploads/images'));
+app.use(jsonParser);
 const whitelist = process.env.WHITELISTED_DOMAINS
   ? process.env.WHITELISTED_DOMAINS.split(",")
   : []

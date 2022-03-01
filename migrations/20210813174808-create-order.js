@@ -19,6 +19,9 @@ module.exports = {
       date_ordered: {
         type: Sequelize.STRING
       },
+      stripe_confirmation: {
+        type: Sequelize.STRING
+      },
       total_cost: {
         type: Sequelize.FLOAT
       },

@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const Order = require('../controllers/orderController');
 const order = new Order();
+const User = require('../controllers/userController');
+const user = new User();
 const app = express();
 
 const router = express.Router();
@@ -28,7 +30,7 @@ router.use(bodyParser.urlencoded({ extended: false }));
  *         schema:
  *           $ref: '#/definitions/Orders'
  */
-router.get('/', order.getAllUserOrders);
+router.get('/all', user.authenticateToken, order.getAllUserOrders);
 
 /**
  * @swagger
@@ -57,5 +59,6 @@ router.get('/', order.getAllUserOrders);
  *           $ref: '#/definitions/Order'
  */
 router.get('/:id', order.getOrderDetails);
+
 
 module.exports = router;

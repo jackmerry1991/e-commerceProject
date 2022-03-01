@@ -1,9 +1,11 @@
+const jwt = require('jsonwebtoken');
 const { response } = require('express');
 const express = require('express');
 const db = require('../database/dbConnection.js')
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const User = require('../models/').User;
+
 module.exports = class UserController {
 
     /**
@@ -25,8 +27,9 @@ module.exports = class UserController {
 
     async findUserById(req, res){
         console.log('/get-user running');
-        const userId = req.params.id;
-        if(!req.params.id) return res.status(400).send('Insuffience data');
+        console.log(req.user);
+        if(!req.user.id) return res.status(400).send('Insuffient data');
+        const userId = req.user.id;
         try{
             const user = await User.findAll({
                 where: {
@@ -71,6 +74,15 @@ module.exports = class UserController {
             const salt = await bcrypt.genSalt(10);
             let encryptedPassword = await bcrypt.hash(req.body.password, salt);
             console.log(encryptedPassword);
+
+            //check if email already exists
+            const userExists = await User.findOne({
+                where: { email: req.body.email}                           
+                });
+            
+            if(userExists) return res.status(409).send("Email already in use");
+
+
             await User.create({
                 email: req.body.email,
                 first_name: req.body.firstName,
@@ -88,9 +100,19 @@ module.exports = class UserController {
     }
 
     async update(req, res){
+        console.log(req.body);
+        console.log(req.body.email);
+        console.log(req.body.street);
+        console.log(req.body.city);
+        console.log(req.body.postcode);
+        console.log(req.body.firstName);
+        console.log(req.body.lastName);
 
-        if(!req.body.email || !req.body.street || !req.body.city || !req.body.postCode || !req.body.firstName || !req.body.lastName || !req.body.paymentDetails) return res.status(400).send('Insufficient data');
+
+        if(!req.body.email || !req.body.street || !req.body.city || !req.body.postcode || !req.body.firstName || !req.body.lastName) return res.status(400).send('Insufficient data');
+        console.log('here');
         try{
+            const userId = req.user.id;
             const result = await User.update({
                         email: req.body.email,
                         first_name: req.body.firstName,
@@ -98,10 +120,9 @@ module.exports = class UserController {
                         street: req.body.street,
                         city: req.body.city,
                         post_code: req.body.postCode,
-                        payment_details: req.body.paymentDetails
                     },
                     {
-                        where: {id: req.body.userId},
+                        where: {id: userId},
                         returning: true
                     }
                 );
@@ -144,5 +165,36 @@ module.exports = class UserController {
         }catch(err){
             console.log(err);
         }
+    }
+
+    async authenticateToken(req, res, next) {
+        console.log('auth token');
+        console.log(req.headers);
+        const authHeader = req.headers['authorization']
+        console.log(authHeader);
+        const token = authHeader && authHeader.split(' ')[1]
+        console.log(token)
+        if (token === null) return res.sendStatus(401)
+      
+        jwt.verify(token, process.env.SECRET, (err, user) => {
+          console.log(err);
+      
+          if (err) return res.sendStatus(401);
+      
+          req.user = user.user;
+          console.log(req.user);
+          next();
+        })
+      }
+
+      async logout (req, res) {
+        // Set token to none and expire after 5 seconds
+        res.cookie('token', 'none', {
+            expires: new Date(Date.now() + 5 * 1000),
+            httpOnly: true,
+        })
+        res
+            .status(200)
+            .json({ success: true, message: 'User logged out successfully' })
     }
 }

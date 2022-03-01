@@ -35,7 +35,7 @@ router.use(bodyParser.urlencoded({ extended: false }));
  *         schema:
  *           $ref: '#/definitions/Cart'
  */
-router.get('/:id', cart.findActtiveCart);
+router.get('/active-cart', user.authenticateToken, cart.findActtiveCart);
 
 
 /**
@@ -61,7 +61,7 @@ router.get('/:id', cart.findActtiveCart);
  *       200:
  *         description: successfully deleted
  */
-router.delete('/remove-item', cart.deleteItem);
+router.delete('/remove-item', user.authenticateToken, cart.deleteItem);
 
 
 //PUTE SWAGGER DEF HERE
@@ -94,7 +94,7 @@ router.put('/update-quantity', cart.updateQuantity);
  *       200:
  *         description: Successfully added
  */
-router.post('/add-item', cart.addItem);
+router.post('/add-item', user.authenticateToken, cart.addItem);
    
 /**
  * @swagger
@@ -120,6 +120,6 @@ router.post('/add-item', cart.addItem);
  *       200:
  *         description: Successfully ordered.
  */
-router.post('/:id/checkout', cart.checkOut);
+router.post('/checkout', user.authenticateToken, cart.checkOut);
 
 module.exports = router;

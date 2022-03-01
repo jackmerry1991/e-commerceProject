@@ -11,7 +11,7 @@ passport.use(new LocalStrategy({
        console.log('/passport');
         //this one is typically a DB call. Assume that the returned user object is pre-formatted and ready for storing in JWT
         const user = await User.findOne({
-          attributes: ['email', 'password'],
+          attributes: ['id', 'email', 'password'],
           where: {email: email}
         });
         console.log('user =')
@@ -22,6 +22,7 @@ passport.use(new LocalStrategy({
         if (!passwordMatch) {
           return cb(null, false, {message: 'Incorrect email or password.'});
         }
-        return cb(null, user.dataValues, {message: 'Logged In Successfully'});
+        const returnedUser = {id: user.dataValues.id, email: user.dataValues.email}
+        return cb(null, returnedUser, {message: 'Logged In Successfully'});
     }));
 

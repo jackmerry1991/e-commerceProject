@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
   Order.init({
     user_id: DataTypes.INTEGER,
     date_ordered: DataTypes.STRING,
+    stripe_confirmation: DataTypes.STRING,
     total_cost: DataTypes.FLOAT,
     payment_received: DataTypes.BOOLEAN,
   }, {

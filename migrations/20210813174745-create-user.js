@@ -29,9 +29,6 @@ module.exports = {
       post_code: {
         type: Sequelize.STRING
       },
-      payment_details: {
-        type: Sequelize.STRING
-      },
       created_at: {
         allowNull: false,
         type: Sequelize.DATE

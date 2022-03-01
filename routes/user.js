@@ -52,7 +52,7 @@ router.get('/users', user.list);
  *         schema:
  *           $ref: '#/definitions/User'
  */
-router.get('/:id', user.findUserById);
+router.get('/user', user.authenticateToken, user.findUserById);
 
 /**
  * @swagger
@@ -129,7 +129,7 @@ router.post('/register', user.create);
 *       200:
 *         description: Successfully updated
 */
-router.put('/', user.update);
+router.put('/', user.authenticateToken, user.update);
 
 
 /**
@@ -173,7 +173,7 @@ router.post('/login', (req, res, next)=>{
            },
              process.env.SECRET, {expiresIn: '2h'});
              res.cookie('token', token, { httpOnly: true });
-           return res.json({token});
+           return res.json({token, user});
         });
     })(req, res, next);
 });
@@ -199,5 +199,22 @@ router.post('/login', (req, res, next)=>{
  *         description: successfully deleted
  */
 router.delete('/delete', user.delete);
+
+/**
+ * @swagger
+ * /api/users/logout:
+ *   post:
+ *     tags:
+ *       - User
+ *     description: Logs a single user out, removing their cookie
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: token
+ *     responses:
+ *       200:
+ *         description: successfully deleted
+ */
+router.post('/logout', user.authenticateToken, user.logout);
 
 module.exports = router;

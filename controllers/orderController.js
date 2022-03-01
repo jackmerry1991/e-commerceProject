@@ -22,13 +22,13 @@ module.exports = class OrderController{
      */
     async getAllUserOrders(req, res){
         console.log('/get-all-orders')
-        if(!req.body.userId) return res.status(400).send('Insufficient data');
-        const userId = req.body.userId;
+        const userId = req.user.id;
         try{
             const orders = await Order.findAll({
                 where:{user_id: userId}
             });
             if(!orders) return res.status(200).send('User has no order history');
+            console.log(orders);
             res.json(orders);
     }catch(err){
         res.status(500).send('Internal Server Error');
@@ -64,7 +64,7 @@ module.exports = class OrderController{
      * @param {*} successfulPayment 
      * @returns 
      */
-    async create(userId, cartId, successfulPayment, cart){
+    async create(userId, cartId, paymentId, successfulPayment, cart){
         console.log('create order');
         console.log(successfulPayment);
         const date = new Date();
