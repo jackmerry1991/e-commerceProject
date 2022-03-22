@@ -221,4 +221,6 @@ router.post(
 //TODO COMPLETE ROUTE AND DOCUMENT IS THIS NECESSARY OR SHOULD THE IMAGE PATHS BE PASSED BACK WITH THE DATA - WAIT UNTIL FRONT END TO IMPLEMENT???
 router.get("/retrieve-image");
 
+router.get("/categories", product.getCategories);
+
 module.exports = router;

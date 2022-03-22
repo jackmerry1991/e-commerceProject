@@ -10,7 +10,7 @@ const storage = multer.diskStorage({
   },
 });
 const uploads = multer({ storage });
-const { Op } = require("sequelize");
+const { Op, Sequelize } = require("sequelize");
 
 module.exports = class ProductController {
   async list(req, res) {
@@ -122,10 +122,16 @@ module.exports = class ProductController {
 
   async searchByCategory(req, res) {
     console.log("/searchCategory");
-    const category = req.body.category;
+    console.log(req.query);
+    const category = req.query.searchTerm;
+    console.log(category);
     if (!category) return res.status(400).send("Insufficient data");
     try {
       const result = await Product.findAll({
+        include: {
+          model: ProductImage,
+          as: 'productImage',
+        },
         where: {
           category: category,
         },
@@ -230,5 +236,13 @@ module.exports = class ProductController {
       image_priority: imagePriority + 1,
     });
     res.json({ msg: "Image successfully created" });
+  }
+
+  async getCategories(req, res){
+    const result = await Product.findAll({
+      attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('category')), 'category']]
+    });
+
+    res.json({result});
   }
 };

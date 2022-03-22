@@ -68,8 +68,8 @@ module.exports = class UserController {
      */
     async create(req, res){
         console.log('user/create');
-       
-        if(!req.body.email || !req.body.password || !req.body.street || !req.body.city || !req.body.postCode || !req.body.firstName || !req.body.lastName) return res.status(400).send('Insufficient data');
+        console.log(req.body);
+        if(!req.body.email || !req.body.password || !req.body.firstName || !req.body.lastName ) return res.status(400).send('Insufficient data');
         try{
             const salt = await bcrypt.genSalt(10);
             let encryptedPassword = await bcrypt.hash(req.body.password, salt);
@@ -93,7 +93,7 @@ module.exports = class UserController {
                 post_code: req.body.postCode,
                 payment_details: req.body.paymentDetails
             });
-            return res.status(201).send('User Created');
+            return res.status(200).send('User Created');
         }catch(err){
             console.log(err);
         }
